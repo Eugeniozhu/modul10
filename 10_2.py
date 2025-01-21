@@ -12,15 +12,14 @@ class Guest(threading.Thread):
     def __init__(self, name):
         super().__init__()
         self.name = name
+
     def run(self):
-        eating_time = random.randint(3, 10)
-        print(f"{self.name} сидит за столом и кушает {eating_time} секунд")
-        time.sleep(eating_time)
+        time.sleep(random.randint(3, 10))
 
 class Cafe:
     def __init__(self, *tables):
-        self.tables = tables
         self.queue = Queue()
+        self.tables = list(tables)
 
     def guest_arrival(self, *guests):
         for guest in guests:
@@ -37,20 +36,19 @@ class Cafe:
                 print(f"{guest.name} в очереди")
 
     def discuss_guests(self):
-        while True:
+        while not self.queue.empty() or any(table.guest is not None for table in self.tables):
             for table in self.tables:
-                if table.guest is not None and not table.guest.is_alive():
+                if table.guest and not table.guest.is_alive():
                     print(f"{table.guest.name} покушал(-а) и ушёл(ушла)")
                     print(f"Стол номер {table.number} свободен")
                     table.guest = None
 
-                    if not self.queue.empty():
-                        guest_from_queue = self.queue.get()
-                        table.guest = guest_from_queue
-                        guest_from_queue.start()
-                        print(f"{guest_from_queue.name} вышел(-ла) из очереди и сел(-а) за стол номер {table.number}")
-            if all(table.guest is None for table in self.tables) and self.queue.empty():
-                break
+                if table.guest is None and not self.queue.empty():
+                    next_guest = self.queue.get()
+                    table.guest = next_guest
+                    next_guest.start()
+                    print(f"{next_guest.name} вышел(-ла) из очереди и сел(-а) за стол номер {table.number}")
+
             time.sleep(1)
 
 #Создание столов
